@@ -20,6 +20,9 @@ from PyQt5.QtCore import Qt
 from functools import partial
 import random
 
+def _adds(n):
+    return "" if n == 1 else "s"
+
 class ChoiceModel(QStandardItemModel):
     def __init__(self, data):
         super().__init__(len(data),1)
@@ -52,6 +55,7 @@ class QuizDialog(QDialog):
         self.questions = []
         self.question = None
         self.results = []
+        self.incorrect = 0
 
         self.buildQuiz(tablemodel)
         self.ui.progressBar.setMaximum(len(self.questions))
@@ -139,7 +143,12 @@ class QuizDialog(QDialog):
         if not ok:
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Ignore)
             msg.setIcon(QMessageBox.Critical)
-            msg.setText("The correct answer is: \n{}".format("\n".join(self.question[3])))
+            msg.setText(
+                "The correct answer is: \n"
+                "{}\n\n"
+                "Select Ignore to not record incorrect answer."
+                "".format("\n".join(self.question[3])))
+            self.incorrect += 1
 
         if msg.exec() == QMessageBox.Ignore:
             answer = correctanswers
@@ -153,6 +162,13 @@ class QuizDialog(QDialog):
             msg = QMessageBox()
             msg.setStandardButtons(QMessageBox.Ok)
             msg.setIcon(QMessageBox.Information)
-            msg.setText("Test Finished")
+            msg.setText(
+                "Test Finished\n"
+                "Answered {} question{}\n"
+                "{} incorrect answer{}!".format(len(self.results),
+                                                _adds(len(self.results)),
+                                                self.incorrect,
+                                                _adds(self.incorrect))
+            )
             msg.exec()
             self.accept()

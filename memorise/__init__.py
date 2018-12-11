@@ -67,7 +67,7 @@ class Memorise(QMainWindow):
     def start(self):
         for item in self.ui.table.selectionModel().selectedRows():
             name = self.ui.table.model().data(item)
-            model = self.datastore.loadtable(name)
+            model = self.datastore.loadtable(name, editable=False)
             quiz = QuizDialog(name, model)
             if quiz.exec() == QDialog.Accepted:
                 self.datastore.saveresults(name, quiz.results)
