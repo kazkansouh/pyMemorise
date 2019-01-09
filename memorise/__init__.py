@@ -17,6 +17,7 @@ from .ui.uiMainWindow import Ui_MainWindow
 from .add import AddDialog
 from .edit import EditDialog
 from .quiz import QuizDialog
+from .review import ReviewDialog
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView
 from PyQt5.QtCore import Qt
 
@@ -39,6 +40,7 @@ class Memorise(QMainWindow):
         self.ui.buttonRemove.clicked.connect(self.remove)
         self.ui.buttonEdit.clicked.connect(self.edit)
         self.ui.buttonStart.clicked.connect(self.start)
+        self.ui.buttonReview.clicked.connect(self.review)
 
     def add(self):
         add = AddDialog([ self.ui.table.model().data(i)
@@ -71,6 +73,13 @@ class Memorise(QMainWindow):
             quiz = QuizDialog(name, model)
             if quiz.exec() == QDialog.Accepted:
                 self.datastore.saveresults(name, quiz.results)
+            break
+
+    def review(self):
+        for item in self.ui.table.selectionModel().selectedRows():
+            name = self.ui.table.model().data(item)
+            review = ReviewDialog(name, self.datastore)
+            review.exec()
             break
 
     def keyPressEvent(self, event):

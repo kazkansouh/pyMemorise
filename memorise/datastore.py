@@ -75,6 +75,53 @@ r.`Revision`
 FROM `memtableroot` AS r ORDER BY r.`Archived`
 """
 
+reviewdialogquery_tests = """
+SELECT T.TestID, T.Revision, T.TimeStamp as `Time`,
+(
+  SELECT COUNT(TestID)
+  FROM answers as A
+  WHERE A.TestID == T.TestID AND A.UserAnswer == A.CorrectAnswer
+) AS `Correct`,
+(
+  SELECT COUNT(TestID)
+  FROM answers as A
+  WHERE A.TestID == T.TestID AND A.UserAnswer != A.CorrectAnswer
+) AS `Wrong`
+FROM tests as T
+WHERE T.`Memory Set` == :name
+ORDER BY T.TimeStamp DESC
+"""
+
+reviewdialogquery_answers = """
+SELECT
+A.Column1 AS `Question Column`,
+A.Value1 AS `Question Value`,
+A.Column2 AS `Answer Column`,
+(
+  CASE WHEN A.CorrectAnswer == A.UserAnswer
+  THEN "PASS"
+  ELSE "FAIL" END
+) AS Result,
+(
+  SELECT COUNT(*)
+  FROM answers AS B
+  WHERE B.Column1 == A.Column1 AND
+        B.Value1 == A.Value1 AND
+        B.Column2 == A.Column2 AND
+        B.CorrectAnswer == A.CorrectAnswer
+) AS `Times Asked`,
+(
+  SELECT COUNT(*)
+  FROM answers AS B
+  WHERE B.Column1 == A.Column1 AND
+        B.Value1 == A.Value1 AND
+        B.Column2 == A.Column2 AND
+        B.CorrectAnswer == A.CorrectAnswer AND
+        B.CorrectAnswer != B.UserAnswer
+) AS `Times Failed`
+FROM `answers` as A WHERE TestID == :testid
+"""
+
 class Datastore:
     def __init__(self, dbase='pymem.db'):
         self.dbase = dbase
@@ -105,7 +152,38 @@ class Datastore:
         return self.roottable
 
     def _reselectroottable(self):
-        self.roottable.setQuery(mainwindowquery)
+        self.roottable.setQuery(mainwindowquery, self.db)
+
+    def loadreviewtests(self, name):
+        query = QtSql.QSqlQuery(self.db)
+        if query.prepare(reviewdialogquery_tests):
+            query.bindValue(":name", name)
+            if not query.exec_():
+                print("Error: could not load test data for {}".format(name))
+                return None
+            table = QtSql.QSqlQueryModel()
+            table.setQuery(query)
+            return table
+        else:
+            print("Error: could not prepare query to load "
+                  "test data for {}".format(name))
+            return None
+
+    def loadreviewanswers(self, testid):
+        query = QtSql.QSqlQuery(self.db)
+        if query.prepare(reviewdialogquery_answers):
+            query.bindValue(":testid", testid)
+            if not query.exec_():
+                print("Error: could not load answers for "
+                      "testid {}".format(testid))
+                return None
+            table = QtSql.QSqlQueryModel()
+            table.setQuery(query)
+            return table
+        else:
+            print("Error: could not prepare query to load "
+                  "answers for testid {}".format(testid))
+            return None
 
     def loadtable(self, name, editable=True):
         """Load a datatable from the database into an item model. If editable,
