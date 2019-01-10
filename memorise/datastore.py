@@ -94,6 +94,8 @@ ORDER BY T.TimeStamp DESC
 
 reviewdialogquery_answers = """
 SELECT
+A.TestID,
+A.QuestionID,
 A.Column1 AS `Question Column`,
 A.Value1 AS `Question Value`,
 A.Column2 AS `Answer Column`,
@@ -120,6 +122,31 @@ A.Column2 AS `Answer Column`,
         B.CorrectAnswer != B.UserAnswer
 ) AS `Times Failed`
 FROM `answers` as A WHERE TestID == :testid
+"""
+
+reviewquestiondialogquery = """
+SELECT
+A.Column1,
+A.Value1,
+A.Column2,
+A.CorrectAnswer,
+A.UserAnswer,
+A.TestID,
+A.QuestionID,
+T.TimeStamp AS Time,
+(
+  CASE WHEN A.CorrectAnswer == A.UserAnswer
+  THEN "PASS"
+  ELSE "FAIL" END
+) AS Result
+FROM answers AS A INNER JOIN tests AS T ON A.TestID == T.TestID
+WHERE (A.Column1, A.Value1, A.Column2, A.CorrectAnswer) IN
+(
+  SELECT B.Column1, B.Value1, B.Column2, B.CorrectAnswer
+  FROM answers AS B
+  WHERE B.TestID == :testid AND B.QuestionID == :questionid
+)
+ORDER BY T.TimeStamp DESC
 """
 
 class Datastore:
@@ -183,6 +210,24 @@ class Datastore:
         else:
             print("Error: could not prepare query to load "
                   "answers for testid {}".format(testid))
+            return None
+
+    def loadreviewanswersdetail(self, testid, questionid):
+        query = QtSql.QSqlQuery(self.db)
+        if query.prepare(reviewquestiondialogquery):
+            query.bindValue(":testid", testid)
+            query.bindValue(":questionid", questionid)
+            if not query.exec_():
+                print("Error: could not load answers for "
+                      "testid {}, questionid {}".format(testid, questionid))
+                return None
+            table = QtSql.QSqlQueryModel()
+            table.setQuery(query)
+            return table
+        else:
+            print("Error: could not prepare query to load "
+                  "answers for testid {}, questionid {}"
+                  "".format(testid, questionid))
             return None
 
     def loadtable(self, name, editable=True):

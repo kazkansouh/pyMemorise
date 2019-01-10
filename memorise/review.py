@@ -14,8 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .ui.uiReviewDialog import Ui_ReviewDialog
-from PyQt5.QtWidgets import QDialog, QHeaderView
+from PyQt5.QtWidgets import QDialog, QHeaderView, QMenu
 from PyQt5.QtCore import QSortFilterProxyModel
+from functools import partial
+from .questionReview import QuestionReviewDialog
 
 class ReviewDialog(QDialog):
     def __init__(self, name, datastore):
@@ -36,6 +38,9 @@ class ReviewDialog(QDialog):
 
         self.ui.questions.header().setSectionResizeMode(
             QHeaderView.ResizeToContents)
+        self.ui.questions.customContextMenuRequested.connect(self.popup)
+        self.menudetails = QMenu()
+        self.menudetails.addAction(self.ui.actionViewQuestionDetails)
 
     def select(self, selected, deslected):
         if len(selected.indexes()) > 0:
@@ -44,3 +49,23 @@ class ReviewDialog(QDialog):
             sortmodel = QSortFilterProxyModel()
             sortmodel.setSourceModel(self.datastore.loadreviewanswers(testid))
             self.ui.questions.setModel(sortmodel)
+            self.ui.questions.hideColumn(0)
+
+    def popup(self, pos):
+        qi = self.ui.questions.indexAt(pos)
+        if not self.ui.questions.model() or qi.row() < 0:
+            return
+        srcqi = self.ui.questions.model().mapToSource(qi)
+        gpos = self.ui.questions.mapToGlobal(pos)
+        self.ui.actionViewQuestionDetails.triggered.disconnect()
+        self.ui.actionViewQuestionDetails.triggered.connect(
+            partial(ReviewDialog.showquestion, self=self, qi=srcqi))
+        if srcqi:
+            self.menudetails.popup(gpos)
+
+    def showquestion(self, qi):
+        record = self.ui.questions.model().sourceModel().record(qi.row())
+        review = QuestionReviewDialog(self.datastore.loadreviewanswersdetail(
+            record.value("TestID"),
+            record.value("QuestionID")))
+        review.exec()

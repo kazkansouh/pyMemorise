@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>587</width>
+    <width>811</width>
     <height>511</height>
    </rect>
   </property>
@@ -47,6 +47,9 @@
        <verstretch>100</verstretch>
       </sizepolicy>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::CustomContextMenu</enum>
+     </property>
      <property name="rootIsDecorated">
       <bool>false</bool>
      </property>
@@ -69,6 +72,11 @@
     </widget>
    </item>
   </layout>
+  <action name="actionViewQuestionDetails">
+   <property name="text">
+    <string>View Question Details</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>

@@ -37,14 +37,23 @@ reverse look ups in the head).
 
 ## Data storage
 
-SQLite is used as the underlying database. All questions asked are
-recorded into the database for further analysis/trends using external
-tools.
+SQLite is used as the underlying database. Currently it is hard coded
+to use `~/.pymem.db` as the database name.
+
+All questions asked are recorded into the database for further
+analysis/trends. The application does provide a table oriented review
+mode of the questions asked so its easy to see if the same mistakes
+are being made over again.
+
+If a more detailed view of the data is needed, the data will need to
+be exported manually from the database. Take a look at the
+`sqlitebrowser` tool to export in CSV format.
 
 ## Installation
 
-Requires `python3`, `pyuic5` available to compile the GUI and `PyQt5`
-libraries: Core, GUI, Widgets, Sql.
+Requires `python3`, `pyuic5` available to compile the GUI and `PyQt5`.
+
+The following Qt libraries are utilised: Core, GUI, Widgets, Sql.
 
 ```bash
 make build
