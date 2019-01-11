@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>344</height>
+    <height>397</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -229,7 +229,7 @@
          <item>
           <widget class="QRadioButton" name="radioSelection">
            <property name="text">
-            <string>&amp;Selection Box</string>
+            <string>Se&amp;lection Box</string>
            </property>
            <property name="checked">
             <bool>false</bool>

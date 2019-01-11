@@ -118,7 +118,7 @@ class QuizDialog(QDialog):
                 self.ui.textAnswer.setVisible(False)
                 self.ui.listAnswer.setModel(ChoiceModel(self.question[4]))
 
-    def endQuestion(self):
+    def endQuestion(self, fast=False):
         if self.ui.radioFreeText.isChecked():
             answer = [ x.upper() for x in self.ui.textAnswer.toPlainText().split('\n') if x != '']
         else:
@@ -139,7 +139,8 @@ class QuizDialog(QDialog):
         msg = QMessageBox()
         msg.setStandardButtons(QMessageBox.Ok)
         msg.setIcon(QMessageBox.Information)
-        msg.setText("Well Done!")
+        msg.setWindowTitle("Question Result")
+        msg.setText("Well Done!\n\nSkip this dialog by using CTRL+Return.")
         if not ok:
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Ignore)
             msg.setIcon(QMessageBox.Critical)
@@ -150,8 +151,9 @@ class QuizDialog(QDialog):
                 "".format("\n".join(self.question[3])))
             self.incorrect += 1
 
-        if msg.exec() == QMessageBox.Ignore:
+        if (not ok or not fast) and msg.exec() == QMessageBox.Ignore:
             answer = correctanswers
+            self.incorrect -= 1
 
         self.results.append(self.question + (correctanswers,answer,ok))
 
@@ -172,3 +174,10 @@ class QuizDialog(QDialog):
             )
             msg.exec()
             self.accept()
+
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+
+        if event.key() == Qt.Key_Return and \
+           event.modifiers() == Qt.ControlModifier:
+            self.endQuestion(fast = True)
