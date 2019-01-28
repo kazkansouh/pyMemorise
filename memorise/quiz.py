@@ -19,14 +19,33 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
 from functools import partial
 import random
+import re
 
 def _adds(n):
     return "" if n == 1 else "s"
+
+def atof(text):
+    try:
+        retval = float(text)
+    except ValueError:
+        retval = text
+    return retval
+
+def natural_keys(text):
+    '''
+    alist.sort(key=natural_keys) sorts in human order
+    basd on: https://stackoverflow.com/a/5967539/5660642
+    modified to ignore changes
+    '''
+    return [ atof(c.upper()) for c in
+             re.split(r'[+-]?([0-9]+(?:[.][0-9]*)?|[.][0-9]+)', text) ]
+
 
 class ChoiceModel(QStandardItemModel):
     def __init__(self, data):
         super().__init__(len(data),1)
         self.setHorizontalHeaderItem(0, QStandardItem("Choice"))
+        data.sort(key=natural_keys)
         for i in range(0,len(data)):
             item = QStandardItem(data[i])
             item.setCheckable(True)
