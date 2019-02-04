@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyMemorise",
-    version="0.0.1",
+    version="0.0.2",
     author="Karim Kanso",
     author_email="author@example.com",
     description="Tool to help memorise tables of data",

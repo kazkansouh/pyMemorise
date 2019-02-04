@@ -40,6 +40,16 @@ def natural_keys(text):
     return [ atof(c.upper()) for c in
              re.split(r'[+-]?([0-9]+(?:[.][0-9]*)?|[.][0-9]+)', text) ]
 
+def normalise(s):
+    "normalise string to simplify comparison"
+    m = re.match(r' *-?\d+(\.\d+)? *(, *-?\d+(\.\d+)? *)*', s)
+    if m != None and m.end() == len(s):
+        # numeric list found
+        numbers = [ x for x in re.split(r'[ ,]', s) if x != '' ]
+        numbers.sort(key=natural_keys)
+        return numbers
+    # assume list of tokens
+    return [ x for x in re.split(r'[ -,]+', s.upper()) if x != '' ]
 
 class ChoiceModel(QStandardItemModel):
     def __init__(self, data):
@@ -139,17 +149,21 @@ class QuizDialog(QDialog):
 
     def endQuestion(self, fast=False):
         if self.ui.radioFreeText.isChecked():
-            answer = [ x.upper() for x in self.ui.textAnswer.toPlainText().split('\n') if x != '']
+            answer = [ normalise(x)
+                       for x in self.ui.textAnswer.toPlainText().split('\n')
+                       if x.strip() != '']
         else:
-            answer = [ x.upper() for x in self.ui.listAnswer.model().selectedItems() ]
+            answer = [ normalise(x)
+                       for x in self.ui.listAnswer.model().selectedItems() ]
         answer.sort()
-        correctanswers = [ x.upper() for x in self.question[3] ]
+        correctanswers = [ normalise(x) for x in self.question[3] ]
         correctanswers.sort()
 
         ok = True
         if len(answer) == len(correctanswers):
             for i in range(0,len(answer)):
-                if answer[i] != correctanswers[i]:
+                # collapse tokens so that "10 MBPS" == "10MBPS"
+                if "".join(answer[i]) != "".join(correctanswers[i]):
                     ok = False
                     break
         else:
@@ -169,11 +183,15 @@ class QuizDialog(QDialog):
                 "Select Ignore to not record incorrect answer."
                 "".format("\n".join(self.question[3])))
             self.incorrect += 1
+        else:
+            answer = correctanswers[:]
 
         if (not ok or not fast) and msg.exec() == QMessageBox.Ignore:
-            answer = correctanswers
+            answer = correctanswers[:]
             self.incorrect -= 1
 
+        answer = [ " ".join(x) for x in answer ]
+        correctanswers = [ " ".join(x) for x in correctanswers ]
         self.results.append(self.question + (correctanswers,answer,ok))
 
         if len(self.questions) > 0:
