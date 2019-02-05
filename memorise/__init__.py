@@ -19,7 +19,7 @@ from .edit import EditDialog
 from .quiz import QuizDialog
 from .review import ReviewDialog
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSortFilterProxyModel
 
 name = "pyMemorise"
 
@@ -33,7 +33,10 @@ class Memorise(QMainWindow):
         self.ui.setupUi(self)
         self.ui.table.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        self.ui.table.setModel(self.datastore.loadroottable())
+        sortmodel = QSortFilterProxyModel()
+        sortmodel.setSourceModel(self.datastore.loadroottable())
+        self.ui.table.setModel(sortmodel)
+        self.ui.table.sortByColumn(1, Qt.AscendingOrder)
 
         self.ui.buttonClose.clicked.connect(self.close)
         self.ui.buttonAdd.clicked.connect(self.add)

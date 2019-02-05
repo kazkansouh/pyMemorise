@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>574</width>
+    <width>675</width>
     <height>333</height>
    </rect>
   </property>
@@ -22,6 +22,9 @@
       </property>
       <property name="itemsExpandable">
        <bool>false</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
       </property>
       <attribute name="headerCascadingSectionResizes">
        <bool>false</bool>
