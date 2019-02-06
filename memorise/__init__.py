@@ -19,9 +19,41 @@ from .edit import EditDialog
 from .quiz import QuizDialog
 from .review import ReviewDialog
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView
-from PyQt5.QtCore import Qt, QSortFilterProxyModel
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QIdentityProxyModel
+from PyQt5.QtGui import QBrush, QColor
 
 name = "pyMemorise"
+
+# number of test results to search for clean runs, used to colour
+# items in main window.
+window_size = 5
+
+def interp(a = Qt.black, b = Qt.white, f = 0.5):
+    return QColor(
+        a.red() + int((b.red() - a.red()) * f),
+        a.green() + int((b.green() - a.green()) * f),
+        a.blue() + int((b.blue() - a.blue()) * f),
+        a.alpha() + int((b.alpha() - a.alpha()) * f)
+    )
+
+class VisualPriorityProxyModel(QIdentityProxyModel):
+    def __init__(self):
+        super().__init__()
+
+        first = QColor(255, 170, 170)
+        last = QColor(170, 255, 170)
+
+        self.colours = []
+        for i in range(0,window_size + 1):
+            self.colours.append(QBrush(interp(first, last, i/window_size)))
+
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.BackgroundRole:
+            index.row()
+            return self.colours[
+                int(super().data(self.index(index.row(), 5), Qt.DisplayRole))]
+        return super().data(index, role)
+
 
 class Memorise(QMainWindow):
     def __init__(self, datastore):
@@ -34,8 +66,10 @@ class Memorise(QMainWindow):
         self.ui.table.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         sortmodel = QSortFilterProxyModel()
-        sortmodel.setSourceModel(self.datastore.loadroottable())
-        self.ui.table.setModel(sortmodel)
+        sortmodel.setSourceModel(self.datastore.loadroottable(window_size))
+        prioritymodel = VisualPriorityProxyModel()
+        prioritymodel.setSourceModel(sortmodel)
+        self.ui.table.setModel(prioritymodel)
         self.ui.table.sortByColumn(1, Qt.AscendingOrder)
 
         self.ui.buttonClose.clicked.connect(self.close)

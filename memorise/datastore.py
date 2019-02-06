@@ -71,7 +71,23 @@ SELECT r.`Memory Set`,
   WHERE `tests`.`Memory Set` == r.`Memory Set`
 ) AS `Times Used`,
 r.`Created`,
-r.`Revision`
+r.`Revision`,
+(
+  /* Need to place SUM outside below SELECT as it ignores the LIMIT clause */
+  SELECT COALESCE(SUM(`X`.`x`), 0) FROM
+  (
+    SELECT (
+      SELECT CASE WHEN COUNT(`A`.`TestID`) == 0 THEN 1 ELSE 0 END
+      FROM `answers` as `A`
+      WHERE `A`.`TestID` == `T`.`TestID` AND
+            `A`.`UserAnswer` != `A`.`CorrectAnswer`
+    ) as `x`
+    FROM `tests` AS `T`
+    WHERE `T`.`Memory Set` == `r`.`Memory Set`
+    ORDER BY `T`.`TimeStamp`
+    DESC LIMIT :limit
+  ) AS `X`
+) AS `Perfect Runs in Window`
 FROM `memtableroot` AS r ORDER BY r.`Archived`
 """
 
@@ -172,14 +188,26 @@ class Datastore:
         self.db.close()
         self.roottable = None
 
-    def loadroottable(self):
+    def loadroottable(self, window_size = 5):
         if not self.roottable:
             self.roottable = QtSql.QSqlQueryModel()
-            self._reselectroottable()
+            self.window_size = window_size
+            return self._reselectroottable()
         return self.roottable
 
     def _reselectroottable(self):
-        self.roottable.setQuery(mainwindowquery, self.db)
+        query = QtSql.QSqlQuery(self.db)
+        if query.prepare(mainwindowquery):
+            query.bindValue(":limit", self.window_size)
+            if not query.exec_():
+                print("Error: could not load main table query")
+                return None
+            self.roottable.setQuery(query)
+            return self.roottable
+        else:
+            print("Error: could not prepare query to load "
+                  "test data for {}".format(name))
+            return None
 
     def loadreviewtests(self, name):
         query = QtSql.QSqlQuery(self.db)
