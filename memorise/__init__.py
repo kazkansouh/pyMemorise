@@ -21,6 +21,7 @@ from .review import ReviewDialog
 from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QIdentityProxyModel
 from PyQt5.QtGui import QBrush, QColor
+import math
 
 name = "pyMemorise"
 
@@ -28,7 +29,12 @@ name = "pyMemorise"
 # items in main window.
 window_size = 5
 
+def weight(f):
+    "Weighted map [0,1] |-> [0,1] used for selecting colour"
+    return math.pow(f,20)
+
 def interp(a = Qt.black, b = Qt.white, f = 0.5):
+    "Interpolate colour"
     return QColor(
         a.red() + int((b.red() - a.red()) * f),
         a.green() + int((b.green() - a.green()) * f),
@@ -40,18 +46,23 @@ class VisualPriorityProxyModel(QIdentityProxyModel):
     def __init__(self):
         super().__init__()
 
-        first = QColor(255, 170, 170)
-        last = QColor(170, 255, 170)
-
-        self.colours = []
-        for i in range(0,window_size + 1):
-            self.colours.append(QBrush(interp(first, last, i/window_size)))
+        self.first = QColor(255, 170, 170)
+        self.last = QColor(170, 255, 170)
+        self.colours = {}
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.BackgroundRole:
-            index.row()
-            return self.colours[
-                int(super().data(self.index(index.row(), 5), Qt.DisplayRole))]
+            correct = super().data(self.index(index.row(), 6), Qt.DisplayRole)
+            incorrect = super().data(self.index(index.row(), 7), Qt.DisplayRole)
+            if correct == 0:
+                return self.first
+            w = weight(correct/(correct+incorrect))
+            colour = self.colours.get(w)
+            if colour != None:
+                return colour
+            colour = QBrush(interp(self.first, self.last, w))
+            self.colours[w] = colour
+            return colour
         return super().data(index, role)
 
 

@@ -87,7 +87,33 @@ r.`Revision`,
     ORDER BY `T`.`TimeStamp`
     DESC LIMIT :limit
   ) AS `X`
-) AS `Perfect Runs in Window`
+) AS `Perfect Runs in Window`,
+(
+  SELECT COALESCE(COUNT(`A`.`TestID`), 0)
+  FROM
+  (
+    SELECT `T1`.`TestID`
+    FROM `tests` as `T1`
+    WHERE `T1`.`Memory Set` == `r`.`Memory Set`
+    ORDER BY `T1`.`TimeStamp`
+    DESC LIMIT :limit
+  ) AS `T2`
+  LEFT JOIN `answers` AS `A` ON `A`.`TestID` == `T2`.`TestID`
+  WHERE `A`.`UserAnswer` == `A`.`CorrectAnswer`
+) AS `Correct Answers in Window`,
+(
+  SELECT COALESCE(COUNT(`A`.`TestID`), 0)
+  FROM
+  (
+    SELECT `T1`.`TestID`
+    FROM `tests` as `T1`
+    WHERE `T1`.`Memory Set` == `r`.`Memory Set`
+    ORDER BY `T1`.`TimeStamp`
+    DESC LIMIT :limit
+  ) AS `T2`
+  LEFT JOIN `answers` AS `A` ON `A`.`TestID` == `T2`.`TestID`
+  WHERE `A`.`UserAnswer` != `A`.`CorrectAnswer`
+) AS `Incorrect Answers in Window`
 FROM `memtableroot` AS r ORDER BY r.`Archived`
 """
 
