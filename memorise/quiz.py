@@ -49,7 +49,7 @@ def normalise(s):
         numbers.sort(key=natural_keys)
         return numbers
     # assume list of tokens
-    return [ x for x in re.split(r'[ -,]+', s.upper()) if x != '' ]
+    return [ x for x in re.split(r'[ \-,]+', s.upper()) if x != '' ]
 
 class ChoiceModel(QStandardItemModel):
     def __init__(self, data):
