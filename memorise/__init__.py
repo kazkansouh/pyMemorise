@@ -27,13 +27,17 @@ from functools import partial
 
 name = "pyMemorise"
 
-# number of test results to search for clean runs, used to colour
-# items in main window.
-window_size = 5
-
-def weight(f):
-    "Weighted map [0,1] |-> [0,1] used for selecting colour"
-    return math.pow(f,20)
+colourLabelTemplate = """
+<html>
+ <head/>
+ <body>
+  <p>
+   <span style=" font-style:italic;">x</span>
+   <span style=" font-style:italic; vertical-align:super;">{:02d}</span>
+  </p>
+ </body>
+</html>
+"""
 
 def interp(a = Qt.black, b = Qt.white, f = 0.5):
     "Interpolate colour"
@@ -45,9 +49,10 @@ def interp(a = Qt.black, b = Qt.white, f = 0.5):
     )
 
 class VisualPriorityProxyModel(QIdentityProxyModel):
-    def __init__(self):
+    def __init__(self, weight):
         super().__init__()
 
+        self.exp = weight
         self.first = QColor(255, 170, 170)
         self.last = QColor(170, 255, 170)
         self.colours = {}
@@ -58,7 +63,7 @@ class VisualPriorityProxyModel(QIdentityProxyModel):
             incorrect = super().data(self.index(index.row(), 7), Qt.DisplayRole)
             if correct == 0:
                 return self.first
-            w = weight(correct/(correct+incorrect))
+            w = self.weight(correct/(correct+incorrect))
             colour = self.colours.get(w)
             if colour != None:
                 return colour
@@ -67,6 +72,16 @@ class VisualPriorityProxyModel(QIdentityProxyModel):
             return colour
         return super().data(index, role)
 
+    def weight(self, f):
+        "Weighted map [0,1] |-> [0,1] used for selecting colour"
+        return math.pow(f, self.exp)
+
+    def setWeight(self, value):
+        self.exp = value
+        self.dataChanged.emit(self.index(0,0),
+                              self.index(self.rowCount() - 1,
+                                         self.columnCount() - 1),
+                              [Qt.BackgroundRole])
 
 class Memorise(QMainWindow):
     def __init__(self, datastore):
@@ -79,11 +94,15 @@ class Memorise(QMainWindow):
         self.ui.table.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         sortmodel = QSortFilterProxyModel()
-        sortmodel.setSourceModel(self.datastore.loadroottable(window_size))
-        prioritymodel = VisualPriorityProxyModel()
+        sortmodel.setSourceModel(
+            self.datastore.loadroottable(self.ui.sliderWindow.value()))
+        prioritymodel = VisualPriorityProxyModel(self.ui.sliderColour.value())
         prioritymodel.setSourceModel(sortmodel)
         self.ui.table.setModel(prioritymodel)
         self.ui.table.sortByColumn(1, Qt.AscendingOrder)
+        self.ui.labelWindow.setText(str(self.ui.sliderWindow.value()))
+        self.ui.labelColour.setText(
+            colourLabelTemplate.format(self.ui.sliderColour.value()))
 
         self.ui.table.customContextMenuRequested.connect(self.popup)
         self.menuexisting = QMenu()
@@ -100,6 +119,13 @@ class Memorise(QMainWindow):
 
         self.ui.buttonClose.clicked.connect(self.close)
         self.ui.buttonAdd.clicked.connect(self.add)
+
+        def setWeight(val):
+            prioritymodel.setWeight(val)
+            self.ui.labelColour.setText(colourLabelTemplate.format(val))
+
+        self.ui.sliderColour.sliderMoved.connect(setWeight)
+        self.ui.sliderWindow.sliderMoved.connect(self.setWindowSize)
 
     def popup(self, pos):
         qi = self.ui.table.model().index(self.ui.table.indexAt(pos).row(), 0)
@@ -169,3 +195,7 @@ class Memorise(QMainWindow):
 
         if event.key() == Qt.Key_Escape:
             self.close()
+
+    def setWindowSize(self, size):
+        self.ui.labelWindow.setText(str(size))
+        self.datastore.loadroottable(size)

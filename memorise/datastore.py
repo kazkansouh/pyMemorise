@@ -217,8 +217,11 @@ class Datastore:
     def loadroottable(self, window_size = 5):
         if not self.roottable:
             self.roottable = QtSql.QSqlQueryModel()
+
+        if not hasattr(self, 'window_size') or self.window_size != window_size:
             self.window_size = window_size
             return self._reselectroottable()
+
         return self.roottable
 
     def _reselectroottable(self):
