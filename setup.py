@@ -23,4 +23,7 @@ setuptools.setup(
             "pymemorise = memorise.main:main",
         ]
     },
+    package_data={
+        '': ['*.png'],
+    },
 )

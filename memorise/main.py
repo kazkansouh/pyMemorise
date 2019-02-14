@@ -15,13 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from memorise import Memorise, datastore
+from memorise import Memorise, datastore, icon
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QSize
 from pathlib import Path
 import sys
+import os.path
 
 def main():
     app = QApplication(sys.argv)
+
+    icon_dir = os.path.dirname(icon.__file__)
+    app_icon = QIcon()
+    for size in [70, 144, 150, 310]:
+        app_icon.addFile('{0}/icon-{1}x{1}.png'.format(icon_dir, size),
+                         QSize(size, size))
+    app.setWindowIcon(app_icon)
 
     #TODO: consider windows path
     dbfile = str(Path.home().joinpath(".pymem.db"))
