@@ -17,6 +17,9 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTreeView" name="table">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
       <property name="rootIsDecorated">
        <bool>false</bool>
       </property>
@@ -41,13 +44,6 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QPushButton" name="buttonStart">
-         <property name="text">
-          <string>Start</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -59,13 +55,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="buttonEdit">
-         <property name="text">
-          <string>Edit</string>
-         </property>
-        </widget>
        </item>
        <item>
         <spacer name="horizontalSpacer_3">
@@ -81,13 +70,6 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonRemove">
-         <property name="text">
-          <string>Remove</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer_4">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -99,13 +81,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="buttonAdd">
-         <property name="text">
-          <string>Add</string>
-         </property>
-        </widget>
        </item>
       </layout>
      </widget>
@@ -120,9 +95,9 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QPushButton" name="buttonReview">
+        <widget class="QPushButton" name="buttonAdd">
          <property name="text">
-          <string>Review</string>
+          <string>Add</string>
          </property>
         </widget>
        </item>
@@ -142,7 +117,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>(C) Karim Kanso 2018</string>
+          <string>(C) Karim Kanso 2019</string>
          </property>
         </widget>
        </item>
@@ -180,6 +155,31 @@
     </item>
    </layout>
   </widget>
+  <action name="actionBeginTest">
+   <property name="text">
+    <string>Begin Test</string>
+   </property>
+  </action>
+  <action name="actionEditMemorySet">
+   <property name="text">
+    <string>Edit Memory Set</string>
+   </property>
+  </action>
+  <action name="actionReviewPreviousAnswers">
+   <property name="text">
+    <string>Review Previous Answers</string>
+   </property>
+  </action>
+  <action name="actionRemoveMemorySet">
+   <property name="text">
+    <string>Remove Memory Set</string>
+   </property>
+  </action>
+  <action name="actionAddNewMemorySet">
+   <property name="text">
+    <string>Add New Memory Set</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

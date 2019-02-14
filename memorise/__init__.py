@@ -18,10 +18,12 @@ from .add import AddDialog
 from .edit import EditDialog
 from .quiz import QuizDialog
 from .review import ReviewDialog
-from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView
+from PyQt5.QtWidgets import QMainWindow, QDialog, QHeaderView, QMenu
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QIdentityProxyModel
 from PyQt5.QtGui import QBrush, QColor
 import math
+from functools import partial
 
 name = "pyMemorise"
 
@@ -83,12 +85,43 @@ class Memorise(QMainWindow):
         self.ui.table.setModel(prioritymodel)
         self.ui.table.sortByColumn(1, Qt.AscendingOrder)
 
+        self.ui.table.customContextMenuRequested.connect(self.popup)
+        self.menuexisting = QMenu()
+        self.menuexisting.addAction(self.ui.actionBeginTest)
+        self.menuexisting.addAction(self.ui.actionReviewPreviousAnswers)
+        self.menuexisting.addSeparator()
+        self.menuexisting.addAction(self.ui.actionEditMemorySet)
+        self.menuexisting.addAction(self.ui.actionRemoveMemorySet)
+        self.menuexisting.addSeparator()
+        self.menuexisting.addAction(self.ui.actionAddNewMemorySet)
+        self.menunew = QMenu()
+        self.menunew.addAction(self.ui.actionAddNewMemorySet)
+        self.ui.actionAddNewMemorySet.triggered.connect(self.add)
+
         self.ui.buttonClose.clicked.connect(self.close)
         self.ui.buttonAdd.clicked.connect(self.add)
-        self.ui.buttonRemove.clicked.connect(self.remove)
-        self.ui.buttonEdit.clicked.connect(self.edit)
-        self.ui.buttonStart.clicked.connect(self.start)
-        self.ui.buttonReview.clicked.connect(self.review)
+
+    def popup(self, pos):
+        qi = self.ui.table.model().index(self.ui.table.indexAt(pos).row(), 0)
+        gpos = self.ui.table.viewport().mapToGlobal(pos)
+        self.ui.actionBeginTest.triggered.disconnect()
+        self.ui.actionEditMemorySet.triggered.disconnect()
+        self.ui.actionReviewPreviousAnswers.triggered.disconnect()
+        self.ui.actionRemoveMemorySet.triggered.disconnect()
+
+        self.ui.actionBeginTest.triggered.connect(
+            partial(Memorise.start, self=self, qi=qi))
+        self.ui.actionEditMemorySet.triggered.connect(
+            partial(Memorise.edit, self=self, qi=qi))
+        self.ui.actionReviewPreviousAnswers.triggered.connect(
+            partial(Memorise.review, self=self, qi=qi))
+        self.ui.actionRemoveMemorySet.triggered.connect(
+            partial(Memorise.remove, self=self, qi=qi))
+
+        if qi.row() < 0:
+            self.menunew.popup(gpos)
+        else:
+            self.menuexisting.popup(gpos)
 
     def add(self):
         add = AddDialog([ self.ui.table.model().data(i)
@@ -104,31 +137,32 @@ class Memorise(QMainWindow):
             if result == QDialog.Accepted:
                 pass
 
-    def remove(self):
-        for item in self.ui.table.selectionModel().selectedRows():
-            self.datastore.droptable(self.ui.table.model().data(item))
+    def remove(self, qi):
+        name = self.ui.table.model().data(qi)
+        msg = QMessageBox()
+        msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Delete Memory Set")
+        msg.setText("Are you sure you want to delete {}?".format(name))
+        if msg.exec() == QMessageBox.Yes:
+            self.datastore.droptable(name)
 
-    def edit(self):
-        for item in self.ui.table.selectionModel().selectedRows():
-            model = self.datastore.loadtable(self.ui.table.model().data(item))
-            edit = EditDialog(model)
-            edit.exec()
+    def edit(self, qi):
+        model = self.datastore.loadtable(self.ui.table.model().data(qi))
+        edit = EditDialog(model)
+        edit.exec()
 
-    def start(self):
-        for item in self.ui.table.selectionModel().selectedRows():
-            name = self.ui.table.model().data(item)
-            model = self.datastore.loadtable(name, editable=False)
-            quiz = QuizDialog(name, model)
-            if quiz.exec() == QDialog.Accepted:
-                self.datastore.saveresults(name, quiz.results)
-            break
+    def start(self, qi):
+        name = self.ui.table.model().data(qi)
+        model = self.datastore.loadtable(name, editable=False)
+        quiz = QuizDialog(name, model)
+        if quiz.exec() == QDialog.Accepted:
+            self.datastore.saveresults(name, quiz.results)
 
-    def review(self):
-        for item in self.ui.table.selectionModel().selectedRows():
-            name = self.ui.table.model().data(item)
-            review = ReviewDialog(name, self.datastore)
-            review.exec()
-            break
+    def review(self, qi):
+        name = self.ui.table.model().data(qi)
+        review = ReviewDialog(name, self.datastore)
+        review.exec()
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
