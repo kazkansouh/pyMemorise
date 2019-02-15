@@ -56,7 +56,7 @@ class ReviewDialog(QDialog):
         if not self.ui.questions.model() or qi.row() < 0:
             return
         srcqi = self.ui.questions.model().mapToSource(qi)
-        gpos = self.ui.questions.mapToGlobal(pos)
+        gpos = self.ui.questions.viewport().mapToGlobal(pos)
         self.ui.actionViewQuestionDetails.triggered.disconnect()
         self.ui.actionViewQuestionDetails.triggered.connect(
             partial(ReviewDialog.showquestion, self=self, qi=srcqi))

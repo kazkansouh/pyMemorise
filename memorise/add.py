@@ -58,7 +58,7 @@ class AddDialog(QDialog):
     def popup(self, pos):
         qi = self.ui.listHeadings.indexAt(pos)
         i = self.headings.itemFromIndex(qi)
-        gpos = self.ui.listHeadings.mapToGlobal(pos)
+        gpos = self.ui.listHeadings.viewport().mapToGlobal(pos)
         self.ui.actionInsertColumnHeader.triggered.disconnect()
         self.ui.actionInsertColumnHeader.triggered.connect(partial(AddDialog.insert, self=self, qi=qi))
         self.ui.actionRemoveColumnHeader.triggered.disconnect()

@@ -76,7 +76,7 @@ class EditDialog(QDialog):
 
     def popup(self, pos):
         qi = self.ui.table.indexAt(pos)
-        gpos = self.ui.table.mapToGlobal(pos)
+        gpos = self.ui.table.viewport().mapToGlobal(pos)
         self.ui.actionAddRow.triggered.disconnect()
         self.ui.actionAddRow.triggered.connect(partial(EditDialog.add, self=self, qi=qi))
         self.ui.actionRemoveRow.triggered.disconnect()
