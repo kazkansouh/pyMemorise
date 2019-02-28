@@ -59,3 +59,23 @@ The following Qt libraries are utilised: Core, GUI, Widgets, Sql.
 make build
 python3 setup.py install
 ```
+
+This will install `pymemorise` program, normally this will be on the
+path.
+
+### Windows Usage
+
+First, install `python3` and `pip3` and make sure they are on the
+path. The below was tested with version 3.7.2 of Python on Windows 10.
+Then perfrom the following from the repositry root:
+
+```bat
+pip3 install -r requirements.txt
+gen_ui.bat
+python3 setup.py install
+```
+
+This should install `pyMemorise.exe` into the standard python
+location. Please check that this is on the path.
+
+The database file created will be located in the users folder.
