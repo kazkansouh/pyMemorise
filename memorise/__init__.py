@@ -26,6 +26,7 @@ import math
 from functools import partial
 
 name = "pyMemorise"
+version = "0.1"
 
 colourLabelTemplate = """
 <html>
