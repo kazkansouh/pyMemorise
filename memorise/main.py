@@ -58,6 +58,11 @@ def main():
 
     args = process_args(app)
 
+    print('''{} {}
+Copyright (C) 2019 Karim Kanso. All Rights Reserved.'''.format(
+    memorise.name,
+    memorise.version))
+
     icon_dir = os.path.dirname(icon.__file__)
     app_icon = QIcon()
     for size in [70, 144, 150, 310]:
