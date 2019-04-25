@@ -16,6 +16,8 @@
 from PyQt5 import QtSql
 from PyQt5.QtCore import Qt, QIdentityProxyModel
 import sys
+import os
+import ctypes
 
 dbschema = ["""
 CREATE TABLE `memtableroot` (
@@ -208,6 +210,10 @@ class Datastore:
             if any([not query.exec_(q) for q in dbschema]):
                 print("Error: Unable to initilise database")
                 sys.exit(1)
+            if os.name == 'nt':
+                ret = ctypes.windll.kernel32.SetFileAttributesW(self.dbase, 0x02)
+                if not ret: # There was an error.
+                    raise ctypes.WinError()
         return self
 
     def __exit__(self, type, value, tb):
