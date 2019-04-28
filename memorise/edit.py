@@ -35,7 +35,9 @@ class ErrorProxyModel(QIdentityProxyModel):
         return super().setData(index, value, role)
 
     def data(self, index, role=Qt.DisplayRole):
-        if index.column() == 0 and role == Qt.BackgroundRole:
+        if index.column() == 0 and \
+           role == Qt.BackgroundRole and \
+           len(self.mapping) > index.row():
             return self.mapping[index.row()]
         return super().data(index, role)
 

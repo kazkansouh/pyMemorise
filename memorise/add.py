@@ -14,10 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .ui.uiAddDialog import Ui_AddDialog
+from .edit import ErrorProxyModel
 from PyQt5.QtWidgets import QDialog, QMenu
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPalette, QBrush
 from PyQt5.QtCore import Qt
 from functools import partial
+import re
 
 class Headings(QStandardItemModel):
     def __init__(self):
@@ -38,7 +40,9 @@ class AddDialog(QDialog):
         self.ui = Ui_AddDialog()
         self.ui.setupUi(self)
 
-        self.headings = Headings()
+        ptablemodel = ErrorProxyModel()
+        ptablemodel.setSourceModel(Headings())
+        self.headings = ptablemodel
         self.ui.listHeadings.setModel(self.headings)
 
         self.ui.listHeadings.customContextMenuRequested.connect(self.popup)
@@ -48,22 +52,31 @@ class AddDialog(QDialog):
         self.menuremove.addAction(self.ui.actionInsertColumnHeader)
         self.menuremove.addAction(self.ui.actionRemoveColumnHeader)
 
-        self.ui.lineName.textChanged.connect(partial(AddDialog.validate, self=self))
-        self.headings.itemChanged.connect(partial(AddDialog.validate, self=self))
-        self.headings.rowsInserted.connect(partial(AddDialog.validate, self=self))
-        self.headings.rowsRemoved.connect(partial(AddDialog.validate, self=self))
+        self.ui.lineName.textChanged.connect(self.validatename)
+        ptablemodel.dataChanged.connect(self.validatecell)
+        ptablemodel.sourceModel().rowsInserted.connect(
+            partial(AddDialog.validatecell,
+                    self=self, tl=None, br=None, role=[]))
+        ptablemodel.sourceModel().rowsRemoved.connect(
+            partial(AddDialog.validatecell,
+                    self=self, tl=None, br=None, role=[]))
 
-        self.validate()
+        pal = QPalette()
+        pal.setColor(QPalette.Mid, Qt.red)
+        self.ui.lineName.setPalette(pal)
+        self.ui.lineName.setAutoFillBackground(True)
+
+        self._validateresult = { "name": False, "headings": True }
+        self.validatename()
 
     def popup(self, pos):
         qi = self.ui.listHeadings.indexAt(pos)
-        i = self.headings.itemFromIndex(qi)
         gpos = self.ui.listHeadings.viewport().mapToGlobal(pos)
         self.ui.actionInsertColumnHeader.triggered.disconnect()
         self.ui.actionInsertColumnHeader.triggered.connect(partial(AddDialog.insert, self=self, qi=qi))
         self.ui.actionRemoveColumnHeader.triggered.disconnect()
         self.ui.actionRemoveColumnHeader.triggered.connect(partial(AddDialog.remove, self=self, qi=qi))
-        if not i:
+        if qi.row() < 0:
             self.menuadd.popup(gpos)
         else:
             self.menuremove.popup(gpos)
@@ -72,25 +85,43 @@ class AddDialog(QDialog):
         row = qi.row()
         if row < 0:
             row = self.headings.rowCount()
-        self.headings.insertRow(row,QStandardItem("NewItem"))
+        self.headings.sourceModel().insertRow(row,QStandardItem("NewItem"))
 
     def remove(self, qi):
         row = qi.row()
         if row < 0:
             return
-        self.headings.removeRow(row)
+        self.headings.sourceModel().removeRow(row)
 
-    def validate(self):
-        def fail(msg):
-            print(msg)
-            self.ui.buttonBox.button(self.ui.buttonBox.Ok).setEnabled(False)
-            return False
+    def validateresult(self, component, result):
+        if self._validateresult.get(component) != None:
+            self._validateresult[component] = result
+        else:
+            print("Ignoring validation result for component {}"
+                  .format(component))
+
+        for comp in self._validateresult:
+            if not self._validateresult[comp]:
+                self.ui.buttonBox.button(self.ui.buttonBox.Ok).setEnabled(False)
+                return
+        self.ui.buttonBox.button(self.ui.buttonBox.Ok).setEnabled(True)
+
+    def validatename(self):
+        def fail(msg, warning=False):
+            print("Warning: Table Name Validation Fail: {}".format(msg))
+            self.ui.lineName.setBackgroundRole(QPalette.Mid)
+            self.validateresult("name", False)
 
         if self.tableName() == "":
             return fail("No table name")
 
+        if self.tableName().startswith("_"):
+            return fail("Tablename starts with underscore")
+
+        # The table name needs to be constrained, otherwise QSqlTableModel
+        # will fail to load the table.
         for c in self.tableName():
-            if not c == "_" and not c.isalnum():
+            if not c.isalnum() and not c in "_":
                 return fail("Invalid char in table name")
 
         for tbl in self.existingtables:
@@ -100,27 +131,38 @@ class AddDialog(QDialog):
         if self.headings.rowCount() < 2:
             return fail("Not enough row headers")
 
-        for row in range(0,self.headings.rowCount()):
-            item = self.headings.item(row).text().strip()
-            if item == "":
-                return fail("Empty heading")
+        self.ui.lineName.setBackgroundRole(QPalette.NoRole)
+        self.validateresult("name", True)
 
-            for c in item:
-                if not c in "_ " and \
-                   not c.isalnum():
-                    return fail("Invalid char in heading")
+    def validatecell(self, tl = None, br = None, role = []):
+        if (tl == None or tl.column() == 0) and role == []:
+            ok = self.headings.rowCount() > 0
+            seen = {}
+            for row in range(0, self.headings.rowCount()):
+                idx = self.headings.index(row, 0)
+                val = self.headings.data(idx).strip()
+                def fail(msg):
+                    nonlocal ok
+                    self.headings.setData(idx,
+                                          QBrush(Qt.red),
+                                          Qt.BackgroundRole)
+                    ok = False
+                    print("Warning: Column Validation Fail: {}".format(msg))
 
-            for prevrow in range(0,row):
-                previtem = self.headings.item(prevrow)
-                if item.upper() == previtem.text().strip().upper():
-                    return fail("Duplicate heading")
-
-        self.ui.buttonBox.button(self.ui.buttonBox.Ok).setEnabled(True)
-        return True
-
+                if seen.get(val):
+                    fail("Duplicate heading")
+                    self.headings.setData(seen.get(val),
+                                          QBrush(Qt.red),
+                                          Qt.BackgroundRole)
+                elif re.match(r"^[a-zA-Z0-9_\- ]+$", val):
+                    self.headings.setData(idx, None, Qt.BackgroundRole)
+                else:
+                    fail("Invalid chars in heading")
+                seen[val] = idx
+            self.validateresult("headings", ok)
 
     def tableName(self):
-        return self.ui.lineName.text()
+        return self.ui.lineName.text().strip().replace(" ", "_")
 
     def columnHeadings(self):
         return [ self.headings.data(i).strip()
