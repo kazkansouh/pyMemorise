@@ -28,22 +28,22 @@ class ErrorProxyModel(QIdentityProxyModel):
         self.mapping = []
 
     def setData(self, index, value, role=Qt.EditRole):
-        if index.column() == 0 and role == Qt.BackgroundRole:
-            self.mapping[index.row()] = value
+        if role == Qt.BackgroundRole:
+            self.mapping[index.row()][index.column()] = value
             self.dataChanged.emit(index, index, [Qt.BackgroundRole])
             return True
         return super().setData(index, value, role)
 
     def data(self, index, role=Qt.DisplayRole):
-        if index.column() == 0 and \
-           role == Qt.BackgroundRole and \
+        if role == Qt.BackgroundRole and \
            len(self.mapping) > index.row():
-            return self.mapping[index.row()]
+            return self.mapping[index.row()][index.column()]
         return super().data(index, role)
 
     def rowInsert(self, p, first, last):
         for k in range(first, last+1):
-            self.mapping.insert(first, None)
+            self.mapping.insert(first,
+                                [None] * self.sourceModel().columnCount())
 
     def rowRemove(self, p, first, last):
         for k in range(first, last+1):
@@ -52,7 +52,7 @@ class ErrorProxyModel(QIdentityProxyModel):
     def setSourceModel(self,model):
         model.rowsAboutToBeInserted.connect(self.rowInsert)
         model.rowsAboutToBeRemoved.connect(self.rowRemove)
-        self.mapping = [None for x in range(0, model.rowCount())]
+        self.mapping = [[None] * model.columnCount()] * model.rowCount()
         return super().setSourceModel(model)
 
 class EditDialog(QDialog):

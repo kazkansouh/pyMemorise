@@ -94,10 +94,13 @@ class QuizDialog(QDialog):
         data = lambda r, c: model.data(model.index(r, c))
         # iterate over columns
         r = model.record()
+        # holds map of questions { c1 |-> { v1 |-> { c2 -> [ v2 ] } } }
         quiz = {}
+        # holds possible values by column { c |-> [ v ] }
         values = {}
         for c1 in range(0, r.count()):
-            c1name = r.fieldName(c1)
+            c1attr = r.fieldName(c1).split("|")
+            c1name = c1attr.pop(0)
             for row in range(0, model.rowCount()):
                 c1value = data(row, c1)
                 if c1value != "":
@@ -105,9 +108,12 @@ class QuizDialog(QDialog):
                         values[c1name] = []
                     if values[c1name].count(c1value) == 0:
                         values[c1name].append(c1value)
+                    if "AnswerOnly" in c1attr:
+                        continue
                     for c2 in range(0, r.count()):
                         if c2 != c1:
-                            c2name = r.fieldName(c2)
+                            c2attr = r.fieldName(c2).split("|")
+                            c2name = c2attr.pop(0)
                             c2value = data(row, c2)
                             if c2value != "":
                                 if not quiz.get(c1name):
