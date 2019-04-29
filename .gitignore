@@ -6,3 +6,4 @@ __pycache__
 ui*py
 *db
 env/
+flymd.*
