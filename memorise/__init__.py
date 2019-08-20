@@ -105,6 +105,8 @@ class Memorise(QMainWindow):
         self.ui.labelColour.setText(
             colourLabelTemplate.format(self.ui.sliderColour.value()))
 
+        self.ui.table.doubleClicked.connect(lambda idx: self.start(idx, False))
+
         self.ui.table.customContextMenuRequested.connect(self.popup)
         self.menuexisting = QMenu()
         self.menuexisting.addAction(self.ui.actionBeginTest)
@@ -179,8 +181,19 @@ class Memorise(QMainWindow):
         edit = EditDialog(model)
         edit.exec()
 
-    def start(self, qi):
+    def start(self, qi, confirm=True):
+        qi = self.ui.table.model().index(qi.row(), 0)
         name = self.ui.table.model().data(qi)
+
+        msg = QMessageBox()
+        msg.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Start Test")
+        msg.setText("Start memoryset {}?".format(name) +
+                    "\n\nSkip this dialog by using by double clicking.")
+        if confirm and msg.exec() == QMessageBox.No:
+            return
+
         model = self.datastore.loadtable(name, editable=False)
         quiz = QuizDialog(name, model)
         if quiz.exec() == QDialog.Accepted:
